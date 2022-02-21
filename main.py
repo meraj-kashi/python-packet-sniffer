@@ -1,8 +1,9 @@
-from email.base64mime import header_length
 import socket
 import struct
 import textwrap
+import configparser
 
+# Config tabs to disply packets
 TAB_1 = '\t - '
 TAB_2 = '\t\t - '
 TAB_3 = '\t\t\t - '
@@ -13,53 +14,57 @@ DATA_TAB_2 = '\t\t '
 DATA_TAB_3 = '\t\t\t '
 DATA_TAB_4 = '\t\t\t\t '
 
+# Import configurations
+config = configparser.ConfigParser()
+
 def main():
     conn = socket.socket(socket.AF_PACKET, socket.SOCK_RAW, socket.ntohs(3))
     while True:
         raw_data, addr = conn.recvfrom(65536)
         dest_mac,src_mac, eth_proto , data = ethernet_frame(raw_data)
-        print('\n Ethernet Frame: ')
-        print(TAB_1 + f'Destination_mac: {dest_mac}, Source_mac: {src_mac}, Protocol: {eth_proto}')
+        if src_mac in config[MAC][ClientMac]:
+            print('\n Ethernet Frame: ')
+            print(TAB_1 + f'Destination_mac: {dest_mac}, Source_mac: {src_mac}, Protocol: {eth_proto}')
 
-        #  8 for IPV4
-        if eth_proto == 8:
-            version ,header_length, ttl , proto, src, target, data = ipv4_packet(data)
-            print(TAB_1 + 'IPV4 Packet: ')
-            print(TAB_2 + f'Version: {version}, Header_lengt: {header_length}, TTL: {ttl}' )
-            print(TAB_2 + f'protocol: {proto}, Source: {src}, Target: {target}' )
+            #  8 for IPV4
+            if eth_proto == 8:
+                version ,header_length, ttl , proto, src, target, data = ipv4_packet(data)
+                print(TAB_1 + 'IPV4 Packet: ')
+                print(TAB_2 + f'Version: {version}, Header_lengt: {header_length}, TTL: {ttl}' )
+                print(TAB_2 + f'protocol: {proto}, Source: {src}, Target: {target}' )
 
-            # ICMP
-            if proto == 1:
-                icmp_type, code, checksum, data = icmp_packet(data)
-                print(TAB_1 + 'ICMP Packet: ')
-                print(TAB_2 + f'Type: {icmp_type}, Code: {code}, Checksum: {checksum}' )
-                print(TAB_2 + 'Data: ')
-                print(format_multi_line(DATA_TAB_3, data))
+                # ICMP
+                if proto == 1:
+                    icmp_type, code, checksum, data = icmp_packet(data)
+                    print(TAB_1 + 'ICMP Packet: ')
+                    print(TAB_2 + f'Type: {icmp_type}, Code: {code}, Checksum: {checksum}' )
+                    print(TAB_2 + 'Data: ')
+                    print(format_multi_line(DATA_TAB_3, data))
 
-            # TCP    
-            if proto == 6:
-                (src_port,dest_port,sequence, acknowledgement,flag_urg, flag_ack,flag_psh,flag_rst,flag_syn, flag_fin, data)=tcp_segment(data)
-                print(TAB_1 + 'TCP Segment: ')
-                print(TAB_2 + f'Source Port: {src_port}, Destination_port: {dest_port}')
-                print(TAB_2 + f'Sequence: {sequence}, Acknowledgement: {acknowledgement}')
-                print(TAB_2 + 'Flags: ')
-                print(TAB_3, f'URG: {flag_urg}, ACK: {flag_ack}, PSH: {flag_psh}, RST: {flag_rst}, SYN: {flag_syn}, FIN: {flag_fin}')
-                print(TAB_2, 'Data: ')
-                print(format_multi_line(DATA_TAB_3, data))
-            
-            # UDP  
-            if proto == 17:
-                src_port, dest_port, size, data= udp_segment(data)
-                print(TAB_1 + 'UDP Segment: ')
-                print(TAB_2 + f'Source Port: {src_port}, Destination_port: {dest_port}, Length: {size}')
-            
-            # Other
+                # TCP    
+                if proto == 6:
+                    (src_port,dest_port,sequence, acknowledgement,flag_urg, flag_ack,flag_psh,flag_rst,flag_syn, flag_fin, data)=tcp_segment(data)
+                    print(TAB_1 + 'TCP Segment: ')
+                    print(TAB_2 + f'Source Port: {src_port}, Destination_port: {dest_port}')
+                    print(TAB_2 + f'Sequence: {sequence}, Acknowledgement: {acknowledgement}')
+                    print(TAB_2 + 'Flags: ')
+                    print(TAB_3, f'URG: {flag_urg}, ACK: {flag_ack}, PSH: {flag_psh}, RST: {flag_rst}, SYN: {flag_syn}, FIN: {flag_fin}')
+                    print(TAB_2, 'Data: ')
+                    print(format_multi_line(DATA_TAB_3, data))
+                
+                # UDP  
+                if proto == 17:
+                    src_port, dest_port, size, data= udp_segment(data)
+                    print(TAB_1 + 'UDP Segment: ')
+                    print(TAB_2 + f'Source Port: {src_port}, Destination_port: {dest_port}, Length: {size}')
+                
+                # Other
+                else:
+                    print(TAB_1 + 'Data: ')
+                    print(format_multi_line(DATA_TAB_1, data))
             else:
-                print(TAB_1 + 'Data: ')
+                print('Data: ')
                 print(format_multi_line(DATA_TAB_1, data))
-        else:
-            print('Data: ')
-            print(format_multi_line(DATA_TAB_1, data))
 
 
 
