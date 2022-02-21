@@ -16,13 +16,14 @@ DATA_TAB_4 = '\t\t\t\t '
 
 # Import configurations
 config = configparser.ConfigParser()
+config.read('config.ini')
 
 def main():
     conn = socket.socket(socket.AF_PACKET, socket.SOCK_RAW, socket.ntohs(3))
     while True:
         raw_data, addr = conn.recvfrom(65536)
         dest_mac,src_mac, eth_proto , data = ethernet_frame(raw_data)
-        if src_mac in config[MAC][ClientMac]:
+        if src_mac == (config['MAC']['ClientMac']).upper():
             print('\n Ethernet Frame: ')
             print(TAB_1 + f'Destination_mac: {dest_mac}, Source_mac: {src_mac}, Protocol: {eth_proto}')
 
